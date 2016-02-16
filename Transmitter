@@ -1,0 +1,261 @@
+$regfile = "m16def.dat"                                     ' specify the used micro
+$crystal = 11059200
+$baud = 9600                                                ' used crystal frequency
+$lib "glcdKS108.lib"
+
+$prog &HFF , &HFF , &HDF , &H00                             ' Take care that the chip supports all fuse bytes.
+
+Config Graphlcd = 128 * 64sed , Dataport = Porta , Controlport = Portc , Ce = 4 , Ce2 = 3 , Cd = 0 , Rd = 1 , Reset = 5 , Enable = 2
+
+Config Portd = Output
+
+Speaker Alias Portd.7
+Declare Sub Tune
+
+Dim Gps As Byte , X As Byte , Lont(6) As Byte , Latt(6) As Byte
+Dim Lat As Byte , Latmin As Byte , Latfrac As Byte , Latns As Byte
+Dim Lon As Byte , Lonmin As Byte , Lonfrac As Byte , Lonew As Byte
+Dim Pic As Byte , Npic As Byte
+
+Setfont Font8x8
+
+Cls
+Lcdat 3 , 1 , "Location   Based " , 0
+Lcdat 6 , 1 , "  Advertising " , 0
+Wait 2
+
+Cls
+Showpic 0 , 0 , Pic5
+Wait 2
+Showpic 0 , 0 , Pic4
+Wait 2
+Showpic 0 , 0 , Pic1
+Wait 2
+Showpic 0 , 0 , Pic2
+Wait 2
+Showpic 0 , 0 , Pic3
+Wait 2
+
+Call Tune
+
+Cls
+Lcdat 2 , 1 , "    V.I.T " , 0
+Lcdat 3 , 1 , "       " , 0
+
+Lcdat 5 , 1 , "  Guided  By:   " , 0
+Lcdat 6 , 1 , "  Dr.S.Joshi " , 0
+Wait 2
+
+Do
+
+Looploop:
+Startloop:
+
+Gps = Waitkey()
+If Gps <> "$" Then Goto Startloop
+
+Gps = Waitkey()
+If Gps <> "G" Then Goto Startloop
+
+Gps = Waitkey()
+If Gps <> "P" Then Goto Startloop
+
+Gps = Waitkey()
+If Gps <> "G" Then Goto Startloop
+
+Gps = Waitkey()
+If Gps <> "G" Then Goto Startloop
+
+Gps = Waitkey()
+If Gps <> "A" Then Goto Startloop
+
+Gps = Waitkey()
+If Gps <> "," Then Goto Startloop
+
+For X = 1 To 6
+  Gps = Waitkey()
+Next X
+
+Timlop:
+Gps = Waitkey()
+If Gps = "," Then Goto Getlat
+Goto Timlop
+
+Getlat:
+For X = 1 To 6
+Getlat1:
+  Gps = Waitkey()
+  If Gps = "." Then Goto Getlat1
+  Latt(x) = Gps
+Next X
+
+Getlat2:
+Gps = Waitkey()
+If Gps <> "," Then Goto Getlat2
+
+Gps = Waitkey()
+Latns = Gps
+
+Gps = Waitkey()
+Gps = Waitkey()
+
+For X = 1 To 6
+Getlon:
+  Gps = Waitkey()
+  If Gps = "." Then Goto Getlon
+  Lont(x) = Gps
+Next X
+
+Getlon1:
+Gps = Waitkey()
+If Gps <> "," Then Goto Getlon1
+
+Gps = Waitkey()
+Lonew = Gps
+
+Lat = Latt(1) - 48
+Lat = Lat * 10
+Lat = Lat + Latt(2)
+Lat = Lat - 48
+
+Latmin = Latt(3) - 48
+Latmin = Latmin * 10
+Latmin = Latmin + Latt(4)
+Latmin = Latmin - 48
+
+Latfrac = Latt(5) - 48
+Latfrac = Latfrac * 10
+Latfrac = Latfrac + Latt(6)
+Latfrac = Latfrac - 48
+
+Lon = Lont(1) - 48
+Lon = Lon * 10
+Lon = Lon + Lont(2)
+Lon = Lon - 48
+
+Lonmin = Lont(3) - 48
+Lonmin = Lonmin * 10
+Lonmin = Lonmin + Lont(4)
+Lonmin = Lonmin - 48
+
+Lonfrac = Lont(5) - 48
+Lonfrac = Lonfrac * 10
+Lonfrac = Lonfrac + Lont(6)
+Lonfrac = Lonfrac - 48
+
+'Cls
+Lcdat 8 , 1 , Lat ; Latmin ; Latfrac ; Chr(latns) ; " " ; Lon ; Lonmin ; Lonfrac ; Chr(lonew) , 0
+
+
+If Latfrac >= 25 And Latfrac <= 29 And Lonfrac >= 24 And Lonfrac <= 25 Then
+Pic = 1
+ If Npic <> Pic Then
+ Showpic 0 , 0 , Pic1
+ Npic = 1
+ Portd.2 = 1
+ Waitms 100
+ Portd.2 = 0
+ End If
+
+
+Elseif Latfrac >= 25 And Latfrac <= 29 And Lonfrac >= 22 And Lonfrac <= 23 Then
+Pic = 2
+ If Npic <> Pic Then
+ Showpic 0 , 0 , Pic2
+ Npic = 2
+ Portd.3 = 1
+ Waitms 100
+ Portd.3 = 0
+ End If
+
+Elseif Latfrac >= 25 And Latfrac <= 29 And Lonfrac >= 20 And Lonfrac <= 21 Then
+Pic = 3
+ If Npic <> Pic Then
+ Showpic 0 , 0 , Pic3
+ Npic = 3
+ Portd.4 = 1
+ Waitms 100
+ Portd.4 = 0
+ End If
+Elseif Latfrac >= 25 And Latfrac <= 29 And Lonfrac >= 18 And Lonfrac <= 19 Then
+Pic = 4
+ If Npic <> Pic Then
+ Showpic 0 , 0 , Pic4
+ Npic = 4
+ Portd.5 = 1
+ Waitms 100
+ Portd.5 = 0
+ End If
+
+
+Elseif Latfrac >= 25 And Latfrac <= 29 And Lonfrac >= 26 And Lonfrac <= 29 Then
+Pic = 5
+ If Npic <> Pic Then
+ Showpic 0 , 0 , Pic5
+ Npic = 5
+ Portd.6 = 1
+ Waitms 100
+ Portd.6 = 0
+ End If
+
+Elseif Latfrac >= 30 And Latfrac <= 31 And Lonfrac >= 20 And Lonfrac <= 21 Then
+Pic = 5
+ If Npic <> Pic Then
+ Showpic 0 , 0 , Pic5
+ Npic = 5
+ Portd.6 = 1
+ Waitms 100
+ Portd.6 = 0
+ End If
+
+End If
+
+Loop
+
+End
+
+
+Sub Tune()
+
+    Sound Speaker , 65 , 1274                               'C2(1/16)
+    Waitms 125                                              'P(1/16)
+    Sound Speaker , 87 , 954                                'F2(1/16)
+    Waitms 125                                              'P(1/16)
+    Sound Speaker , 98 , 850                                'G2(1/16)
+    Waitms 125                                              'P(1/16)
+    Sound Speaker , 87 , 954                                'F2(1/16)
+    Sound Speaker , 117 , 715                               'Ais2(1/16)
+    Waitms 125                                              'P(1/16)
+    Sound Speaker , 110 , 758                               'A2(1/16)
+    Waitms 125                                              'P(1/16)
+    Sound Speaker , 98 , 850                                'G2(1/16)
+    Waitms 125                                              'P(1/16)
+    Sound Speaker , 110 , 758                               'A2(1/16)
+    Sound Speaker , 87 , 954                                'F2(1/16)
+    Waitms 125
+
+End Sub
+
+
+$include "font8x8.font"
+
+Pic1:
+
+$bgf "12.bgf"
+
+Pic2:
+
+$bgf "1.bgf"
+
+Pic3:
+
+$bgf "20.bgf"
+
+Pic4:
+
+$bgf "24.bgf"
+
+Pic5:
+
+$bgf "18.bgf" 
+
